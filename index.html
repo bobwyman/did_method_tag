@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>did:tag Method Specification</title>
+    <script
+      src="https://www.w3.org/Tools/respec/respec-w3c"
+      async
+      class="remove"
+    ></script>
+    <script class="remove">
+      var respecConfig = {
+        specStatus: "CG-DRAFT",
+        shortName: "did-method-tag",
+        wg: "Credentials Community Group",
+        wgURI: "https://www.w3.org/community/credentials/",
+        latestVersion: null,
+        edDraftURI: "https://github.com/bobwyman/did-method-tag/",
+        wgPublicList: "public-credentials",
+        editors: [
+          {
+            name: "Bob Wyman",
+            email: "bob@wyman.us",
+            company: "Self",
+            companyURL: "https://wyman.us",
+          },
+        ],
+        authors: [
+          {
+            name: "Bob Wyman",
+            email: "bob@wyman.us",
+            company: "Self",
+            companyURL: "https://wyman.us",
+          },
+        ],
+        github: "https://github.com/bobwyman/did-method-tag",
+
+        localBiblio: {
+          "DID-PRIMER": {
+            title: "DID Primer",
+            href: "https://github.com/WebOfTrustInfo/rebooting-the-web-of-trust-fall2017/blob/master/topics-and-advance-readings/did-primer.md",
+            authors: ["Drummond Reed", "Manu Sporny"],
+            publisher: "Rebooting the Web of Trust 2017",
+          },
+          "DID-DNS": {
+            title: "The Decentralized Identifier (DID) in the DNS",
+            href: "https://tools.ietf.org/html/draft-mayrhofer-did-dns-01",
+            authors: ["A. Mayrhofer", "D. Klesev", "M. Sabadello"],
+            status: "Internet Draft",
+            publisher: "IETF",
+          },
+          "OWASP-TRANSPORT": {
+            title: "Transport Layer Protection Cheatsheet",
+            href: "https://www.owasp.org/index.php/Transport_Layer_Protection_Cheat_Sheet",
+          },
+          "WEB-DID": {
+            title: "did:web Method Specification",
+            href: "https://w3c-ccg.github.io/did-method-web/",
+          },
+          "ZOOKOS-TRIANGLE": {
+            title: "Names: Distributed, Secure, Human-Readable: Choose Two",
+            authors: ["Zooko Wilcox-O'Hearn"],
+            href: "https://web.archive.org/web/20011020191610/http://zooko.com/distnames.html",
+          },
+          "ZOOKOS-TETRAHEDRON": {
+            title: "The Persistence of Identity (Updating Zooko's Pyramid)",
+            authors: ["Bob Wyman"],
+            href: "https://web.archive.org/web/20160331154849/https://wyman.us/main/2006/12/the_persistence.html",
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <section id="abstract">
+      <p>
+        The did:tag DID method enables any controller of an HTTP accessible
+        domain or subdomain, or an email address, to create unique,
+        interoperable DIDs with minimal dependencies on other technologies or
+        systems. By leveraging a subset of the tagURI specification [[RFC4151]],
+        the did:tag DID method enables the creation of DIDs which are "unique
+        across space and time while being tractable to humans," without
+        preventing the creation of DIDs which are largely intractable and
+        unlikely to remain unique across time. did:tag DIDs can be resolved
+        either synchronously, via the web, or asynchronously, via email or other
+        defined alternative resolution services.
+      </p>
+    </section>
+    <section id="sotd"></section>
+    <section>
+      <h1>Introduction</h1>
+      <p>
+        The goal of this proposal is to go beyond the already good work done
+        with other DID methods and address several issues for which solutions
+        are not already satisfactorially provided. The key issues addressed here
+        include:
+      </p>
+      <ol>
+        <li>
+          The persistence of identifiers and methods for maintaining the
+          uniqueness in time.
+        </li>
+        <li>
+          Expanding the realm of DID issuers to include all those who have an
+          email addresses.
+        </li>
+        <li>Asynchronous access to DID documents.</li>
+        <li>The provision of alternative DID resolution mechanisms.</li>
+      </ol>
+
+      <p>
+        <b>Persistence:</b> It is generally accepted that ideal distributed
+        identifiers would be memorable, secure from misappropriation, and
+        globally unique. But, an identifier should also not become less
+        memorable as time passes, or less secure, or less likely to be unique.
+        Thus, to the set of three basic naming qualities, we should add a fourth
+        quality; that of persistence. [[?ZOOKOS-TETRAHEDRON]]
+      </p>
+      <div style="display: flex; justify-content: center">
+        <img src="WymansTetrahedron.png" />
+      </div>
+      <p>
+        Unfortunately, as Zooko Wilcox-O'Hearn [[?ZOOKOS-TRIANGLE]] pointed out
+        in 2001, it is not possible to simultaneously optimize all of the base
+        qualities of decentralized identifiers. For example: identifiers may be
+        secure, global, and even likely to remain so for quite some time,
+        perhaps by using very long cryptographic hash functions to mint them,
+        but such names are typically not very memorable, at least not by human
+        beings. Thus, our process for creating names needs to incorporate a
+        tradeoff between the various desirable attributes of ideal identifiers.
+      </p>
+      <p>
+        Web DIDs do a good job of addressing three of the desirable qualities of
+        a decentralized identifier. [[?WEB-DID]] The DID Document provides the
+        data needed to make them secure, the ability to structure them with
+        human readable components allows them to be memorable, and their linkage
+        to DNS records provides an ability to ensure that they are unique by
+        limiting the number of those who can mint them.
+      </p>
+      <pre
+        class="example"
+        title="A Web DID, memorable, unique, secure, but not peristent."
+      >
+        did:web:example.com:user:alice
+      </pre>
+      <p>
+        However, while an issuer of Web DIDs may work hard to ensure that
+        duplicate DIDs are not issued, maintaining uniqueness over time can be
+        challenging. A Web DID might be issued to a user named Alice in one
+        year, but then Alice may cease to become a user in some future year.
+        Once that happens, some new Alice may wish to have the simple, memorable
+        identifer "user:alice," but be told that that identifier was issued to a
+        long-gone user in some previous year. Similarly, domain names tend to
+        change owners over time. Thus, a new service owner may not even be aware
+        that there had once been an Alice served by some previous owner. As a
+        result, a new DID might be issued to an Alice only to discover that it
+        appears to conflict with DID issued earlier.
+      </p>
+      <p>
+        These issues of identifier persistence were considered and addressed in
+        the preparation of the IETF's tagURI scheme. [[RFC4151]] The solution
+        was to define a scheme, very much like that used for Web DIDs and URLs
+        in general, but with an added element that specifies a date during which
+        the issuer of the identifier claims to have been the controller of the
+        domain name incorporated within the name. Using tagURIs, it then becomes
+        possible to create only slightly less memorable names for multiple
+        Alice's at different times. For instance, the following are several
+        possible tagURIs that might identify different Alice's without conflict
+        and that could be each minted by a different issuer without a need to
+        know of any earlier issuer using the same domain name.
+      </p>
+      <pre class="example" title="tagURIs for several unique Alices">
+            tag:example.com,2000:user:alice
+            tag:example.com,2050:user:alice
+            tag:example.com,2090-10-15:user:alice
+            tag:example.com,2090-10-16:user:alice
+    </pre
+      >
+      <p>
+        In order to gain the benefits of persistence provided by tagURIs, this
+        proposal describes a DID method that relies on tagURIs as its base
+        rather than the web URLs which were the focus of the Web DID.
+      </p>
+
+      <p>
+        <b>Enabling all to be issuers:</b> Ideally, everyone would be able to
+        generate useful DIDs without needing to rely on other issuers. However,
+        most existing DID methods assume that an issuer has ready access to
+        services that are not commanded by the majority of users. Even something
+        as "simple" as a web site is far beyond the capacity of many.
+        Nonetheless, individuals often have needs to generate identifiers and
+        would feel that their self-sovereignty was constrainted if they could
+        not do so without relying on others. Their needs could be addressed by
+        providing a mechanism for minting DIDs from tagURIs which incorporate an
+        email address rather than a domain name. For instance, the following are
+        valid tagURIs incorporating email addresses:
+      </p>
+
+      <pre class="example" title="tagURIs using email addresses">
+          tag:john@example.com,2000:sender_key
+          tag:paul@example.com,2021:living_room_tv
+          tag:admin@example.com
+      </pre>
+      <p>
+        The simplest way to support such email-based identifiers would be to
+        define a resolution method that allows one to send an email message to
+        the specified address and whose response should be another email message
+        containing the requested DID Document as an attachment. Such a system
+        could be implemented by having custom software monitor traffic to a
+        particular email inbox. It could also be implemented using completely
+        manual means. A "john@example.com" might recieve a message with a
+        subject of
+        <code>did:tag:john@example.com,2000:sender_key</code> and know that the
+        desired response was an email with the DID document as an attachment.
+        With only a little difficulty, the appropriate response could be
+        prepared and sent.
+      </p>
+
+      <p>
+        <b>Asynchronous Resolution:</b> An email based DID resolution method,
+        unlike a web-based method, allows asynchronous DID resolution. In some
+        cases, the resolution might occur hours, days, even weeks after a
+        request was made. But, even a very slow response might actually have
+        been the fastest possible response. An asynchronous resolution
+        capability would be particularly useful in environments when
+        connectivity is difficult to maintain or where bandwidth is very slow.
+        As an extreme example, it is very unlikely that one would be successful
+        in using https to fetch a DID document from a web server in New York
+        City if one were making the request from a habitat on Mars or one of its
+        moons.
+      </p>
+
+      <p>
+        <b>Alternative DID resolution mechanisms. </b> Just as web addresses can
+        sometimes be temporarily unavailable due to technical issues, a web
+        addresses' availability is sometimes precluded by local or regional
+        administrative policy. One's employer, or one's government, might block
+        web access to sites that traffic in either pornography or discussions of
+        human rights and liberty. However, even though a user may be blocked
+        from accessing a web site, and thus from resolving DIDs on that site, it
+        is often the case that it is possible to exchange email with addresses
+        on that site, if only because email doesn't require direct,
+        point-to-point connections. Thus, it is useful to define a mechanism by
+        which even a normally web-accessible DID document could be retrieved via
+        email protocols. In order to provide this mechanism, I propose that an
+        ``AltResolution'' service be provided as a means to inform users of an
+        alternative to web based DID resolution.
+      </p>
+
+      <section>
+        <h2>Preface</h2>
+        <p>
+          The tag DID method specification conforms to the requirements
+          specified in the Decentralized Identifiers v1.0 Specification
+          [[DID-CORE]]. For more information about DIDs and DID method
+          specifications, please also see the [[?DID-PRIMER]]
+        </p>
+      </section>
+      <section id="conformance">
+        <!-- This section is filled automatically by ReSpec. -->
+      </section>
+      <section>
+        <h2>Example</h2>
+
+        <pre class="example" title="Example did:tag DID document">
+{
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:tag:example.com,2021-10-26:Bob",
+  "verificationMethod": [{
+    "id": "did:tag:example.com,2021:faHiOpRlPVQcY_-tA4A",
+    "type": "JsonWebKey2020", 
+    "controller": "did:tag:example.com:123",
+    "publicKeyJwk": {
+      "crv": "Ed25519", 
+      "x": "VCpo2LMLhn6iWku8MKvSLg2ZAoC-nlOyPVQaO3FxVeQ", 
+      "kty": "OKP", 
+      "kid": "_Qq0UL2Fq651Q0Fjd6TvnYE-faHiOpRlPVQcY_-tA4A" 
+    }
+  }],
+  "service": [{
+    "id": "did:tag:example.com,2021:asynch",
+    "type": "AltResolution",
+    "serviceEndpoint": "mailto:did@example.com"
+  }],
+}
+        </pre>
+      </section>
+    </section>
+
+    <section>
+      <h1>tag DID Method Specification</h1>
+
+      <section>
+        <h2>Target system</h2>
+        <p>
+          The target system of the tag DID method is the web host that the
+          domain name included in the DID resolves to when queried through the
+          Domain Name System (DNS).
+        </p>
+      </section>
+
+      <section>
+        <h2>Method name</h2>
+        <p>
+          The namestring that shall identify this DID method is:
+          <code>tag</code>. A DID that uses this method MUST begin with the
+          following prefix: <code>did:tag</code>. Per the DID specification,
+          this string MUST be in lowercase. The remainder of the DID, after the
+          prefix, is specified below.
+        </p>
+      </section>
+
+      <section>
+        <h2>Method-specific identifier</h2>
+        <p>
+          The method specific identifier is a subset of tagURI as defined in
+          [[RFC4151]].
+        </p>
+        <ul>
+          <li>
+            Any directories or subdirectories included in the tagURI should be
+            delimited by colons rather than slashes
+          </li>
+          <li>Fragments ('#') are not supported.</li>
+          <li>Query ('?') parameters are not supported.</li>
+        </ul>
+
+        <pre class="nohighlight">
+            tag-did = "did:" tagURI_subset
+            tagURI_subset = "tag:" taggingEntity ":" specific
+            taggingEntity = authorityName "," date
+            authorityName = DNSname / emailAddress
+            date = year ["-" month ["-" day]]
+            year = 4DIGIT
+            month = 2DIGIT
+            day = 2DIGIT
+            DNSname = DNScomp *( "."  DNScomp ) ; see RFC 1035 [3]
+            DNScomp = alphaNum [*(alphaNum /"-") alphaNum]
+            emailAddress = 1*(alphaNum /"-"/"."/"_") "@" DNSname
+            alphaNum = DIGIT / ALPHA
+            specific = *( pchar / ":" ) ; pchar from RFC 3986 [1]
+        </pre>
+
+        <pre class="example nohighlight" title="Example tag Method DIDs">
+            did:tag:example.com
+            did:tag:example.com:operator
+            did:tag:example.com,2021:Bob
+            did:tag:example.com,2021:user:Alice
+            did:tag:www.example.com,2021:user:Alice
+            did:tag:example.com,2021-10-26:C2AVvLMv6gmMNam3uVAjZpfkcJCwD
+            did:tag:yaml.org,2002:int
+
+            did:tag:did@example.com,2021:Bob
+        </pre>
+      </section>
+
+      <section>
+        <h2>JSON-LD context definition</h2>
+        <p>The definition of the tag DID JSON-LD context is:</p>
+
+        <pre title="tag DID method JSON-LD context">
+            TBD
+        </pre>
+      </section>
+
+      <section>
+        <h2>DID method operations</h2>
+        <section>
+          <h3>Create (Register)</h3>
+          <p>Creating a web-accessbile DID is done by:</p>
+          <ol>
+            <li>
+              applying at a domain name registrar for use of a domain name and
+            </li>
+            <li>
+              storing the location of a hosting service, the IP address at a DNS
+              lookup service
+            </li>
+            <li>
+              creating the DID document JSON-LD file and storing the
+              <code>did.json</code> file under the .well-known/did_tag URL to
+              represent the entire domain, or under the specified path if many
+              DIDs will be resolved in this domain.
+            </li>
+          </ol>
+
+          <p>
+            For example, for the domain name `www.example.com`, the `did.json`
+            will be available under the following URL:
+          </p>
+
+          <pre
+            class="example nohighlight"
+            title="Creating the web-accessible DID"
+          >
+did:tag:www.example.com
+ -> https://www.example.com/.well-known/did_tag/did.json
+          </pre>
+
+          <p>
+            If an optional path is specified within the tagURI, the
+            <code>did.json</code> will be available under the specified path:
+          </p>
+
+          <pre
+            class="example nohighlight"
+            title="Creating the web-accessible DID with optional path"
+          >
+did:tag:www.example.com:alice
+ -> https://www.example.com/.well-known/did_tag/user/alice/did.json
+
+did:tag:www.example.com:user,2021:user:alice
+ -> https://w3c-ccg.github.io/.well-known/did_tag/2021/user/alice/did.json
+          </pre>
+        </section>
+
+        <section>
+          <h3>Read (Resolve)</h3>
+
+          <section>
+            <h4>Reading/Resolving a web-accessible DID</h4>
+            <p>
+              The following steps MUST be executed to resolve the DID document
+              from a tag DID whose authorityName is a DNSname:
+            </p>
+
+            <ol>
+              <li>Extract the DNSname from the tagURI.</li>
+              <li>
+                Generate an HTTPS URL to the expected location of the DID
+                document by prepending the DNSname with <code>https://</code>.
+              </li>
+              <li>To that string, append <code>/.well-known/did_tag</code>.</li>
+              <li>
+                If the tagURI contains a date, replace any colons within the
+                date with slashes, prepend a slash, and append it to the string.
+              </li>
+              <li>
+                if the tagURI contains a specific component, replace all colons
+                within it with slashes ('/') and append it to the string
+              </li>
+              <li>Append <code>/did.json</code> to complete the URL.</li>
+              <li>
+                Perform an HTTP <code>GET</code> request to the URL using an
+                agent that can successfully negotiate a secure HTTPS connection,
+                which enforces the security requirements as described in
+                <a href="#security-and-privacy-considerations"></a>.
+              </li>
+            </ol>
+            When performing the DNS resolution during the HTTP
+            <code>GET</code> request, the client SHOULD utilize
+            <div RFC8484=""></div>
+            in order to prevent Man-in-the-middle attacks as well as to prevent
+            tracking of the lookup.
+          </section>
+
+          <section>
+            <h4>Resolving a DID via email</h4>
+            <p>
+              The following steps MUST be executed to resolve the DID document
+              from a tag DID whose authorityName is an emailAddress:
+            </p>
+            <ol>
+              <li>Extract the emailAddress from the tagURI.</li>
+              <li>Replace the at-sign ('@') with <code>+tag@</code></li>
+              <li>
+                Send an email message to the emailAddress with a subject line
+                containing the DID.
+              </li>
+              <li>
+                If and when a response is delivered, the DID Document will be
+                found in an attachment to the response.
+              </li>
+            </ol>
+
+            <p class="issue">
+              Should an email resolver be permitted to, or trusted to, resolve
+              web-accessbile DIDs on behalf of email correspondents? This seems
+              like a great opportunity to establish man-in-the-middle attacks.
+              How could that be prevented? In some cases, there may be no
+              alternative.
+            </p>
+          </section>
+        </section>
+
+        <section>
+          <h3>Update</h3>
+          <p>
+            To update the DID document, the <code>did.json</code> has to be
+            updated. Please note that the DID will remain the same, but the
+            contents of the DID document could change, e.g., by including a new
+            verification key or adding service endpoints.
+          </p>
+          <p>
+            Please note that this DID method does not specify any authentication
+            or authorization mechanism for writing to the DID Document. It is
+            left to implementations to protect DID documents from modification
+            by an attacker.
+          </p>
+        </section>
+
+        <section>
+          <h3>Deactivate (Revoke)</h3>
+          <p>
+            To delete the DID document, the <code>did.json</code> has to be
+            removed or has to be no longer publicly available due to any other
+            means.
+          </p>
+        </section>
+      </section>
+
+      <section class="informative">
+        <h2>Security and privacy considerations</h2>
+
+        <div TBD="">TBD</div>
+
+        <section>
+          <h3>Optional Path Considerations</h3>
+          <p>
+            When optional paths to DID documents are used to resolve documents
+            rather than bare domains, verification with signed data proves that
+            the entity in control of the file indicated in the path has the
+            private keys. It does not prove that the domain operator has the
+            private keys.
+          </p>
+
+          <p>This example:</p>
+
+          <pre class="nohighlight">
+did:tag:example.com:u:bob
+          </pre>
+          <p>resolves to the DID document at:</p>
+          <pre class="nohighlight">
+https://example.com/.well-known/did_tag/u/bob/did.json
+          </pre>
+          <p>
+            In this scenario, it is probable that example.com has given user Bob
+            control over the DID in question, and proofs of control refer to Bob
+            rather than all of example.com.
+          </p>
+        </section>
+      </section>
+    </section>
+
+    <section class="appendix informative">
+      <h1>Reference implementations</h1>
+      <p>
+        A reference implementation will be provided at some future time if there
+        is any indication that doing so would be useful.
+      </p>
+    </section>
+  </body>
+</html>

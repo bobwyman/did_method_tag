@@ -10,7 +10,7 @@ here:
 
 https://w3c-ccg.github.io/
 
-Please feel free to raise [issues][https://github.com/bobwyman/did_method_tag/issues]. All constructive criticism will be welcomed.
+Please feel free to raise [issues](https://github.com/bobwyman/did_method_tag/issues). All constructive criticism will be welcomed.
 
 ## Editing and building the specification
 

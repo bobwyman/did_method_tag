@@ -209,7 +209,7 @@
       <pre class="example" title="tagURIs using email addresses">
           tag:john@example.com,2000:sender_key
           tag:paul@example.com,2021:living_room_tv
-          tag:admin@example.com
+          tag:admin@example.com,2022:
       </pre>
       <p>
         Each of these tagURIs can be easily converted into a DID, using the tag
@@ -284,7 +284,7 @@
   "verificationMethod": [{
     "id": "did:tag:example.com,2021:faHiOpRlPVQcY_-tA4A",
     "type": "JsonWebKey2020", 
-    "controller": "did:tag:example.com:123",
+    "controller": "did:tag:example.com,2021:123",
     "publicKeyJwk": {
       "crv": "Ed25519", 
       "x": "VCpo2LMLhn6iWku8MKvSLg2ZAoC-nlOyPVQaO3FxVeQ", 
@@ -363,16 +363,15 @@
             year = 4DIGIT
             month = 2DIGIT
             day = 2DIGIT
-            DNSname = DNScomp *( "."  DNScomp ) ; see RFC 1035 [3]
+            DNSname = DNScomp *( "."  DNScomp ) ; see RFC 1035
             DNScomp = alphaNum [*(alphaNum /"-") alphaNum]
             emailAddress = 1*(alphaNum /"-"/"."/"_") "@" DNSname
             alphaNum = DIGIT / ALPHA
-            specific = *( pchar / ":" ) ; pchar from RFC 3986 [1]
+            specific = *( pchar / ":" ) ; pchar from RFC 3986
         </pre>
 
         <pre class="example nohighlight" title="Example tag Method DIDs">
-            did:tag:example.com
-            did:tag:example.com:operator
+            did:tag:example.com,2021:Alice
             did:tag:example.com,2021:Bob
             did:tag:example.com,2021:user:Alice
             did:tag:www.example.com,2021:user:Alice
@@ -413,8 +412,8 @@
             class="example nohighlight"
             title="Creating the web-accessible DID"
           >
-did:tag:www.example.com
- -> https://www.example.com/.well-known/did_tag/did.json
+did:tag:www.example.com,2021:
+ -> https://www.example.com/.well-known/did_tag/2021/did.json
           </pre>
 
           <p>
@@ -426,8 +425,8 @@ did:tag:www.example.com
             class="example nohighlight"
             title="Creating the web-accessible DID with optional specific data"
           >
-did:tag:www.example.com:alice
- -> https://www.example.com/.well-known/did_tag/alice/did.json
+did:tag:www.example.com,2021:alice
+ -> https://www.example.com/.well-known/did_tag/2021/alice/did.json
 
 did:tag:www.example.com:user,2021:user:alice
  -> https://w3c-ccg.github.io/.well-known/did_tag/2021/user/alice/did.json
@@ -541,11 +540,11 @@ did:tag:www.example.com:user,2021:user:alice
           <p>This example:</p>
 
           <pre class="nohighlight">
-did:tag:example.com:u:bob
+did:tag:example.com,2020:u:bob
           </pre>
           <p>resolves to the DID document at:</p>
           <pre class="nohighlight">
-https://example.com/.well-known/did_tag/u/bob/did.json
+https://example.com/.well-known/did_tag/2020/u/bob/did.json
           </pre>
           <p>
             In this scenario, it is probable that example.com has given user Bob

@@ -3,14 +3,14 @@
 This repository contains the `did:tag` Decentralized Identifier Method
 Specification. You can access the latest version of this draft here:
 
-https://wyman.us/public/CG-DRAFT-did-method-tag.html
+https://wyman.us/public/unofficial-did-method-tag.html
 
 The W3C Community Group that is working on this specification can be found
 here:
 
 https://w3c-ccg.github.io/
 
-Please feel free to raise [issues][https://github.com/bobwyman/did_method_tag/issues]. All constructive criticism will be welcomed.
+Please feel free to raise [issues](https://github.com/bobwyman/did_method_tag/issues). All constructive criticism will be welcomed.
 
 ## Editing and building the specification
 

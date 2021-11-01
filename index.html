@@ -336,19 +336,12 @@
         <p>
           The syntax of a did:tag method specific identifier is a subset of
           tagURI syntax as defined in [[RFC4151]]. The following constraints are
-          applied:
+          applied in order to avoid conflict with DID URLs:
         </p>
-        <ol>
-          <li>
-            Any directories or subdirectories included in the tagURI should be
-            delimited by colons rather than slashes.
-          </li>
-          <li>In order to avoid conflict with DID URLs:</li>
-          <ul>
-            <li>Fragments ('#') are not supported.</li>
-            <li>Query ('?') parameters are not supported.</li>
-          </ul>
-        </ol>
+        <ul>
+          <li>Fragments ('#') are not supported.</li>
+          <li>Query ('?') parameters are not supported.</li>
+        </ul>
         <p>
           The modified and constrained abnf for tagURIs supported as components
           of DIDs using this method appears below:
@@ -370,6 +363,10 @@
             specific = *( pchar / ":" ) ; pchar from RFC 3986
         </pre>
 
+        <p class="issue" title="Internationalization">
+          The tagURI syntax pchar definition prevents the use of some email
+          addresses. This should be addressed.
+        </p>
         <pre class="example nohighlight" title="Example tag Method DIDs">
             did:tag:example.com,2021:Alice
             did:tag:example.com,2021:Bob
@@ -396,15 +393,15 @@
               lookup service
             </li>
             <li>
-              creating the DID document JSON-LD file and storing the
-              <code>did.json</code> file under the .well-known/did_tag URL to
-              represent the entire domain, or under the specified path if many
-              DIDs will be resolved in this domain.
+              creating the DID document JSON-LD file and storing the file under
+              the <code>.well-known</code> URL to represent the entire domain,
+              or under the specified path if many DIDs will be resolved in this
+              domain.
             </li>
           </ol>
 
           <p>
-            For example, for the domain name `www.example.com`, the `did.json`
+            For example, for the domain name `www.example.com`, the DID document
             will be available under the following URL:
           </p>
 
@@ -413,12 +410,12 @@
             title="Creating the web-accessible DID"
           >
 did:tag:www.example.com,2021:
- -> https://www.example.com/.well-known/did_tag/2021/did.json
+ -> https://www.example.com/.well-known/didtag2021.json
           </pre>
 
           <p>
-            If a optional specific data is provided within the tagURI, the
-            <code>did.json</code> will be available under the specified path:
+            If optional specific data is provided within the tagURI, the DID
+            Document will be available under the specified path:
           </p>
 
           <pre
@@ -426,10 +423,10 @@ did:tag:www.example.com,2021:
             title="Creating the web-accessible DID with optional specific data"
           >
 did:tag:www.example.com,2021:alice
- -> https://www.example.com/.well-known/did_tag/2021/alice/did.json
+ -> https://www.example.com/alice/didtag2021.json
 
-did:tag:www.example.com:user,2021:user:alice
- -> https://w3c-ccg.github.io/.well-known/did_tag/2021/user/alice/did.json
+did:tag:www.example.com:user,2021-11-01:user:alice
+ -> https://w3c-ccg.github.io/user/alice/didtag2021-11-01.json
           </pre>
         </section>
 
@@ -449,16 +446,17 @@ did:tag:www.example.com:user,2021:user:alice
                 Generate an HTTPS URL to the expected location of the DID
                 document by prepending the DNSname with <code>https://</code>.
               </li>
-              <li>To that string, append <code>/.well-known/did_tag</code>.</li>
               <li>
-                If the tagURI contains a date, replace any colons within the
-                date with slashes, prepend a slash, and append it to the string.
+                If the tagURI contains no specific component, append
+                <code>/.well-known/</code> to the HTTPS URL.
               </li>
               <li>
                 if the tagURI contains a specific component, replace all colons
-                within it with slashes ('/') and append it to the string
+                within it with slashes ('/') and append it to the HTTPS URL.
               </li>
-              <li>Append <code>/did.json</code> to complete the URL.</li>
+              <li>Append <code>didtag</code> to the string.</li>
+              <li>Append the date component to the string.</li>
+              <li>Append <code>.json</code> to complete the URL.</li>
               <li>
                 Perform an HTTP <code>GET</code> request to the URL using an
                 agent that can successfully negotiate a secure HTTPS connection,
@@ -467,9 +465,8 @@ did:tag:www.example.com:user,2021:user:alice
               </li>
             </ol>
             When performing the DNS resolution during the HTTP
-            <code>GET</code> request, the client SHOULD utilize
-            <div RFC8484=""></div>
-            in order to prevent Man-in-the-middle attacks as well as to prevent
+            <code>GET</code> request, the client SHOULD utilize [[RFC8484]] in
+            order to prevent Man-in-the-middle attacks as well as to prevent
             tracking of the lookup.
           </section>
 
@@ -492,17 +489,21 @@ did:tag:www.example.com:user,2021:user:alice
                 found in an attachment to the response.
               </li>
             </ol>
+
+            <p class="issue" title="Email security">
+              Should S/MIME [[RFC8551]], PGP [[RFC4880]], DIDComm, or some other
+              means of sending and receiving signed email messages be identified
+              or recommended? Should message encryption be encouraged?
+            </p>
           </section>
         </section>
 
         <section>
           <h3>Update</h3>
           <p>
-            To update the DID document, for instance, to rotate keys, the
-            <code>did.json</code> has to be updated. Please note that the DID
-            will remain the same, but the contents of the DID document could
-            change, e.g., by including a new verification key or adding service
-            endpoints.
+            Please note that when a DID document is updated, the DID will remain
+            the same, but the contents of the DID document will change, e.g., by
+            including a new verification key or adding service endpoints.
           </p>
           <p>
             Please note that this DID method does not specify any authentication
@@ -515,9 +516,8 @@ did:tag:www.example.com:user,2021:user:alice
         <section>
           <h3>Deactivate (Revoke)</h3>
           <p>
-            To delete the DID document, the <code>did.json</code> has to be
-            removed or has to be no longer publicly available due to any other
-            means.
+            To delete the DID document, it has to be removed or has to be
+            rendered no longer publicly available due to some other means.
           </p>
         </section>
       </section>
@@ -531,10 +531,10 @@ did:tag:www.example.com:user,2021:user:alice
           <h3>Optional tagURI specific Data Considerations</h3>
           <p>
             When optional tagURI specific data is used to resolve DID documents
-            rather than just bare authorityNames, verification with signed data
+            rather than just a bare taggingEntity, verification with signed data
             proves that the entity in control of DID document has the private
-            keys. It does not prove that the operator of the service identified
-            by the authorityName has the private keys.
+            keys. It neither proves nor implies that the operator of the service
+            identified by the authorityName has the private keys.
           </p>
 
           <p>This example:</p>
@@ -544,7 +544,7 @@ did:tag:example.com,2020:u:bob
           </pre>
           <p>resolves to the DID document at:</p>
           <pre class="nohighlight">
-https://example.com/.well-known/did_tag/2020/u/bob/did.json
+https://example.com/u/bob/didtag2020.json
           </pre>
           <p>
             In this scenario, it is probable that example.com has given user Bob
